@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AuroraHouse | โรงเรือนอัจฉริยะ iot-119</title>
+<meta name="description" content="ระบบ Dashboard แบบ Realtime สำหรับโรงเรือนอัจฉริยะ iot-119 แสดงข้อมูลเซ็นเซอร์จาก ESP32 ผ่าน Firebase">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;
+  --ink:#d8e0f0;
+  --mute:#7a8aaa;
+  --soft:#b0bcd8;
+  --glass:rgba(255,255,255,.05);
+  --glass2:rgba(255,255,255,.08);
+  --edge:rgba(255,255,255,.10);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;
+  color:var(--ink);
+  font-family:Prompt,system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.6;
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse 70% 50% at 5% 0%,rgba(56,180,160,.13),transparent 65%),
+    radial-gradient(ellipse 60% 50% at 98% 0%,rgba(100,80,200,.14),transparent 65%),
+    radial-gradient(ellipse 80% 60% at 55% 110%,rgba(200,120,60,.09),transparent 65%),
+    var(--bg);
+  background-attachment:fixed;
+}
+.wrap{max-width:1260px;margin:0 auto;padding:28px 20px 56px}
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:16px;flex-wrap:wrap;margin-bottom:28px;
+  padding-bottom:20px;border-bottom:1px solid var(--edge);
+}
+.logo{
+  font-family:Unbounded,Prompt,sans-serif;font-weight:700;
+  font-size:clamp(20px,3.8vw,32px);margin:0;letter-spacing:-.3px;
+  background:linear-gradient(100deg,#5ee8cc,#8a70e8 55%,#e8a060);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{color:var(--mute);font-size:13.5px;margin-top:3px;letter-spacing:.01em}
+.pills{display:flex;gap:10px;flex-wrap:wrap}
+.pill{
+  display:flex;align-items:center;gap:8px;padding:8px 16px;
+  border-radius:99px;background:var(--glass);border:1px solid var(--edge);
+  backdrop-filter:blur(10px);font-size:13.5px;color:var(--soft);
+  letter-spacing:.01em;
+}
+.dot{width:9px;height:9px;border-radius:50%;background:#e05070;flex-shrink:0}
+.dot.on{background:#3dd4a0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{box-shadow:0 0 0 6px rgba(61,212,160,.18);opacity:.9}}
+.glass{
+  background:var(--glass);border:1px solid var(--edge);
+  border-radius:var(--radius);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 4px 24px rgba(0,0,0,.22);
+}
+.hero{display:grid;grid-template-columns:250px 1fr 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:900px){.hero{grid-template-columns:1fr}}
+.hero>div{padding:24px}
+.ring{position:relative;width:190px;height:190px;margin:0 auto}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring b{font-family:Unbounded,sans-serif;font-size:44px;line-height:1;letter-spacing:-.02em}
+.ring span{font-size:13px;color:var(--mute);margin-top:5px}
+.cap{text-align:center;margin-top:12px;font-weight:500;font-size:15px;color:var(--soft)}
+h2{font-size:13px;font-weight:500;color:var(--mute);margin:0 0 14px;text-transform:uppercase;letter-spacing:.06em}
+.adv{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.adv li{
+  display:flex;gap:10px;align-items:flex-start;padding:11px 14px;
+  border-radius:12px;background:rgba(255,255,255,.04);
+  border-left:3px solid var(--c,#3dd4a0);font-size:14px;
+  color:var(--soft);line-height:1.5;
+}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kv div{
+  padding:14px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid var(--edge);
+}
+.kv small{display:block;color:var(--mute);font-size:12px;margin-bottom:4px;line-height:1.4}
+.kv b{font-family:Unbounded,sans-serif;font-size:19px;font-weight:500}
+.kv em{font-style:normal;font-size:12px;color:var(--mute);margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin-bottom:4px}
+.card{
+  padding:18px;cursor:pointer;position:relative;overflow:hidden;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--c);opacity:.8}
+.card.off{border-color:rgba(220,80,90,.4)}
+.card.sel{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 8px 32px rgba(0,0,0,.28)}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.lb{font-size:13px;color:var(--mute);line-height:1.4}
+.ico{font-size:20px;opacity:.9}
+.val{font-family:Unbounded,sans-serif;font-size:28px;font-weight:500;margin:8px 0 3px;line-height:1}
+.val small{font-family:Prompt;font-size:13px;color:var(--mute);margin-left:5px}
+.tr{font-size:12px;min-height:18px;color:var(--mute)}
+.up{color:#e89a6a}.dn{color:#6ab8e0}.eq{color:var(--mute)}
+.gauge{position:relative;height:6px;border-radius:9px;background:rgba(255,255,255,.08);margin:10px 0 7px}
+.gauge .zone{position:absolute;top:0;bottom:0;border-radius:9px;background:rgba(61,212,160,.25)}
+.gauge .pin{
+  position:absolute;top:-4px;width:5px;height:14px;
+  border-radius:4px;background:#cdd5e8;transform:translateX(-2.5px);
+  transition:left .7s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 0 8px var(--c);
+}
+.mm{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute)}
+svg.sp{width:100%;height:28px;display:block;margin-top:8px;opacity:.85}
+.chartbox{margin-top:18px;padding:24px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{
+  border:1px solid var(--edge);background:transparent;color:var(--mute);
+  padding:5px 13px;border-radius:99px;font:inherit;font-size:13px;cursor:pointer;
+  transition:all .18s;
+}
+.chip:hover{color:var(--soft);border-color:var(--soft)}
+.chip.on{color:#fff;background:var(--c);border-color:var(--c)}
+.cw{position:relative;height:300px}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:18px}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:9px;max-height:320px;overflow:auto}
+.log li{
+  font-size:13.5px;padding:10px 13px;border-radius:11px;
+  background:rgba(255,255,255,.04);color:var(--soft);line-height:1.5;
+}
+.log time{display:block;font-size:11.5px;color:var(--mute);margin-top:2px}
+footer{margin-top:24px;font-size:12.5px;color:var(--mute);text-align:center;letter-spacing:.01em}
+:focus-visible{outline:2px solid #5ee8cc;outline-offset:3px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:9px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1 class="logo">AuroraHouse</h1><div class="sub">ศูนย์ควบคุมโรงเรือนอัจฉริยะ · ฐานข้อมูล iot-119</div></div>
+  <div class="pills">
+    <div class="pill"><span class="dot" id="dot"></span><span id="status">กำลังเชื่อมต่อ…</span></div>
+    <div class="pill">🕒 <span id="clock">--:--:--</span></div>
+    <div class="pill">📦 <span id="cnt">0</span> รายการ</div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="glass">
+    <h2 style="text-align:center">คะแนนสุขภาพโรงเรือน</h2>
+    <div class="ring">
+      <svg viewBox="0 0 120 120"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4cf0cf"/><stop offset="1" stop-color="#9a7bff"/></linearGradient></defs>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="10"/>
+      <circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset 1s"/></svg>
+      <div class="num"><b id="score">--</b><span>จาก 100</span></div>
+    </div>
+    <div class="cap" id="grade">รอข้อมูล…</div>
+  </div>
+  <div class="glass"><h2>คำแนะนำจากระบบ</h2><ul class="adv" id="adv"><li>รอข้อมูลจาก ESP32…</li></ul></div>
+  <div class="glass"><h2>ค่าที่คำนวณให้อัตโนมัติ</h2>
+    <div class="kv">
+      <div><small>VPD (แรงดึงไอน้ำ)</small><b id="vpd">--</b><em>kPa</em></div>
+      <div><small>จุดน้ำค้าง</small><b id="dew">--</b><em>°C</em></div>
+      <div><small>น้ำที่ใช้ได้อีก (โดยประมาณ)</small><b id="wat">--</b><em>วัน</em></div>
+      <div><small>แบตเตอรี่ใช้ได้อีก</small><b id="bat">--</b><em>ชม.</em></div>
+    </div>
+  </div>
+</section>
+
+<section class="grid" id="grid"></section>
+
+<section class="glass chartbox">
+  <h2>กราฟเปรียบเทียบย้อนหลัง (เลือกได้หลายค่า · ปรับสเกลเป็น % ของช่วงค่า)</h2>
+  <div class="chips" id="chips"></div>
+  <div class="cw"><canvas id="chart"></canvas></div>
+</section>
+
+<section class="two">
+  <div class="glass chartbox" style="margin:0"><h2>สัดส่วนความสมดุล (ค่าล่าสุดเทียบช่วงอุดมคติ)</h2><div class="cw" style="height:300px"><canvas id="radar"></canvas></div></div>
+  <div class="glass chartbox" style="margin:0"><h2>บันทึกเหตุการณ์</h2><ul class="log" id="log"><li>ยังไม่มีเหตุการณ์</li></ul></div>
+</section>
+
+<footer>อัปเดตล่าสุด: <span id="last">-</span> · ข้อมูลย้อนหลัง 60 รายการล่าสุด · คลิกการ์ดเพื่อเน้นกราฟ</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// ====== แก้ค่านี้ให้ตรงกับโปรเจกต์ Firebase ของตัวเอง ======
+firebase.initializeApp({
+  apiKey: "AIzaSyA6agnBUtVhbI0bf5O4BfcTcRq4yfkV7Ks",
+  authDomain: "iot-119.firebaseapp.com",
+  databaseURL: "https://iot-119-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "iot-119",
+  storageBucket: "iot-119.firebasestorage.app",
+  messagingSenderId: "671320708163",
+  appId: "1:671320708163:web:4b6e827412e92074e830f6",
+  measurementId: "G-6NFSCQMKGG"
+});
+const db = firebase.database();
+
+// k=ชื่อฟิลด์, ok=ช่วงอุดมคติ
+const M=[
+ {k:"temperature",n:"อุณหภูมิอากาศ",u:"°C",i:"🌡️",min:15,max:45,d:1,c:"#ff6b6b",ok:[22,30]},
+ {k:"humidity",n:"ความชื้นอากาศ",u:"%",i:"💧",min:0,max:100,d:0,c:"#4dabf7",ok:[55,80]},
+ {k:"soil_moisture",n:"ความชื้นดิน",u:"%",i:"🌱",min:0,max:100,d:0,c:"#c08a4b",ok:[40,65]},
+ {k:"soil_temp",n:"อุณหภูมิดิน",u:"°C",i:"🪴",min:10,max:40,d:1,c:"#f08c5a",ok:[20,28]},
+ {k:"light",n:"ความเข้มแสง",u:"lux",i:"☀️",min:0,max:50000,d:0,c:"#ffd43b",ok:[10000,40000]},
+ {k:"uv_index",n:"ดัชนี UV",u:"",i:"🕶️",min:0,max:11,d:1,c:"#f783ac",ok:[0,6]},
+ {k:"ph",n:"ค่า pH ของน้ำ",u:"",i:"🧪",min:4,max:10,d:1,c:"#b197fc",ok:[6,7.2]},
+ {k:"water_level",n:"ระดับน้ำในถัง",u:"%",i:"🚰",min:0,max:100,d:0,c:"#3bc9db",ok:[30,100]},
+ {k:"co2",n:"คาร์บอนไดออกไซด์",u:"ppm",i:"🌫️",min:300,max:1500,d:0,c:"#a9b4d0",ok:[400,1000]},
+ {k:"battery",n:"แบตเตอรี่อุปกรณ์",u:"%",i:"🔋",min:0,max:100,d:0,c:"#69db7c",ok:[20,100]}
+];
+const $=id=>document.getElementById(id);
+const pct=(m,x)=>Math.max(0,Math.min(100,(x-m.min)/(m.max-m.min)*100));
+const fit=(m,x)=>{const[l,h]=m.ok,r=h-l;if(x>=l&&x<=h)return 100;const dist=x<l?l-x:x-h;return Math.max(0,100-dist/r*100)};
+
+// สร้างการ์ด + ชิปเลือกกราฟ
+const grid=$("grid"),chips=$("chips");
+let shown=new Set(["temperature","humidity","soil_moisture"]);
+M.forEach(m=>{
+  const e=document.createElement("div");e.className="card glass";e.id="c_"+m.k;e.tabIndex=0;e.style.setProperty("--c",m.c);
+  e.innerHTML=`<div class="top"><span class="lb">${m.n}</span><span class="ico">${m.i}</span></div>
+  <div class="val"><span id="v_${m.k}">--</span><small>${m.u}</small></div><div class="tr" id="t_${m.k}">&nbsp;</div>
+  <div class="gauge"><div class="zone" style="left:${pct(m,m.ok[0])}%;width:${pct(m,m.ok[1])-pct(m,m.ok[0])}%"></div><div class="pin" id="p_${m.k}" style="left:0"></div></div>
+  <div class="mm"><span id="mn_${m.k}">ต่ำ --</span><span id="av_${m.k}">เฉลี่ย --</span><span id="mx_${m.k}">สูง --</span></div>
+  <svg class="sp" id="s_${m.k}" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>`;
+  const pick=()=>{shown.has(m.k)?shown.delete(m.k):shown.add(m.k);if(!shown.size)shown.add(m.k);sync();drawChart()};
+  e.onclick=pick;e.onkeydown=ev=>{if(ev.key==="Enter")pick()};
+  grid.appendChild(e);
+  const b=document.createElement("button");b.className="chip";b.id="h_"+m.k;b.textContent=m.i+" "+m.n;b.style.setProperty("--c",m.c);b.onclick=pick;chips.appendChild(b);
+});
+function sync(){M.forEach(m=>{$("c_"+m.k).classList.toggle("sel",shown.has(m.k));$("h_"+m.k).classList.toggle("on",shown.has(m.k))})}
+sync();
+
+let hist=[],cur=null,chart,radar;
+const fmt=(m,x)=>x.toFixed(m.d);
+
+function drawChart(){
+  const labels=hist.map(h=>new Date(h.ts).toLocaleTimeString("th-TH"));
+  const ds=M.filter(m=>shown.has(m.k)).map(m=>({label:m.n+(m.u?" ("+m.u+")":""),raw:hist.map(h=>h[m.k]),data:hist.map(h=>pct(m,h[m.k])),borderColor:m.c,backgroundColor:m.c+"22",fill:shown.size===1,tension:.35,pointRadius:0,borderWidth:2.5}));
+  if(!chart){
+    Chart.defaults.color="#94a0c8";
+    chart=new Chart($("chart"),{type:"line",data:{labels,datasets:ds},options:{maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{labels:{boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+": "+Number(c.dataset.raw[c.dataIndex]).toFixed(1)}}},
+      scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(255,255,255,.07)"}},x:{ticks:{maxTicksLimit:7},grid:{display:false}}}}});
+  }else{chart.data.labels=labels;chart.data.datasets=ds;chart.update()}
+}
+function drawRadar(){
+  if(!cur)return;
+  const data=M.map(m=>fit(m,cur[m.k])),labels=M.map(m=>m.n);
+  if(!radar){
+    radar=new Chart($("radar"),{type:"radar",data:{labels,datasets:[{data,borderColor:"#4cf0cf",backgroundColor:"rgba(76,240,207,.22)",pointBackgroundColor:"#9a7bff",borderWidth:2}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:"rgba(255,255,255,.12)"},angleLines:{color:"rgba(255,255,255,.12)"},pointLabels:{font:{size:11}}}}}});
+  }else{radar.data.datasets[0].data=data;radar.update()}
+}
+function stats(){
+  M.forEach(m=>{
+    const v=hist.map(h=>h[m.k]).filter(x=>typeof x==="number");if(v.length<2)return;
+    const lo=Math.min(...v),hi=Math.max(...v),av=v.reduce((a,b)=>a+b,0)/v.length,r=(hi-lo)||1;
+    $("mn_"+m.k).textContent="ต่ำ "+fmt(m,lo);$("av_"+m.k).textContent="เฉลี่ย "+fmt(m,av);$("mx_"+m.k).textContent="สูง "+fmt(m,hi);
+    const pts=v.map((y,i)=>`${i/(v.length-1)*100},${27-(y-lo)/r*24}`).join(" ");
+    $("s_"+m.k).innerHTML=`<polyline points="${pts}" fill="none" stroke="${m.c}" stroke-width="1.8" vector-effect="non-scaling-stroke"/>`;
+    // แนวโน้มเทียบรายการก่อนหน้า
+    const p=v[v.length-2],c=v[v.length-1],df=c-p,t=$("t_"+m.k);
+    t.className="tr "+(Math.abs(df)<1e-9?"eq":df>0?"up":"dn");
+    t.textContent=Math.abs(df)<1e-9?"● คงที่":(df>0?"▲ +":"▼ ")+df.toFixed(m.d)+" จากรอบก่อน";
+  });
+}
+// ===== แจ้งเตือน/บันทึกเหตุการณ์ =====
+const was={},logs=[];
+function events(d){
+  M.forEach(m=>{
+    const bad=d[m.k]<m.ok[0]||d[m.k]>m.ok[1],txt=d[m.k]<m.ok[0]?"ต่ำกว่าเกณฑ์":"สูงกว่าเกณฑ์";
+    if(bad&&!was[m.k]){logs.unshift(`<li>⚠️ ${m.i} ${m.n} ${txt} (${fmt(m,d[m.k])} ${m.u})<time>${new Date().toLocaleTimeString("th-TH")}</time></li>`)}
+    if(!bad&&was[m.k]===true){logs.unshift(`<li>✅ ${m.i} ${m.n} กลับสู่ปกติ (${fmt(m,d[m.k])} ${m.u})<time>${new Date().toLocaleTimeString("th-TH")}</time></li>`)}
+    was[m.k]=bad;
+  });
+  if(logs.length>25)logs.length=25;
+  if(logs.length)$("log").innerHTML=logs.join("");
+}
+function advice(d){
+  const a=[],add=(t,c)=>a.push(`<li style="--c:${c}">${t}</li>`);
+  if(d.soil_moisture<40)add("🌱 ดินแห้ง · แนะนำให้น้ำ 5–10 นาที","#ff6b6b");
+  if(d.soil_moisture>65)add("🌱 ดินชื้นเกิน · งดรดน้ำเพื่อป้องกันรากเน่า","#4dabf7");
+  if(d.temperature>30)add("🌡️ ร้อนเกิน · เปิดพัดลมหรือคลุมซาแรน","#ffa94d");
+  if(d.temperature<22)add("🌡️ เย็นเกิน · พิจารณาปิดช่องลม","#4dabf7");
+  if(d.water_level<30)add("🚰 น้ำในถังใกล้หมด · เติมน้ำก่อนรอบรดถัดไป","#ff6b6b");
+  if(d.ph<6||d.ph>7.2)add("🧪 pH นอกช่วง 6.0–7.2 · ปรับสารละลาย","#b197fc");
+  if(d.uv_index>6)add("🕶️ UV สูง · ควรพรางแสงช่วงเที่ยง","#f783ac");
+  if(d.co2>1000)add("🌫️ CO₂ สูง · เปิดระบายอากาศ","#ffa94d");
+  if(d.battery<20)add("🔋 แบตเตอรี่ต่ำ · ชาร์จอุปกรณ์","#ff6b6b");
+  if(!a.length)add("✨ ทุกค่าอยู่ในเกณฑ์ดี พืชเติบโตได้เต็มที่","#38f2b0");
+  $("adv").innerHTML=a.slice(0,5).join("");
+}
+function derived(d){
+  const T=d.temperature,RH=d.humidity,es=0.6108*Math.exp(17.27*T/(T+237.3));
+  $("vpd").textContent=(es*(1-RH/100)).toFixed(2);
+  const g=Math.log(RH/100)+17.27*T/(T+237.3);$("dew").textContent=(237.3*g/(17.27-g)).toFixed(1);
+  $("wat").textContent=(d.water_level/100*14).toFixed(1);
+  $("bat").textContent=Math.round(d.battery/100*72);
+}
+function score(d){
+  const s=Math.round(M.reduce((a,m)=>a+fit(m,d[m.k]),0)/M.length);
+  $("score").textContent=s;$("arc").style.strokeDashoffset=326.7*(1-s/100);
+  $("grade").textContent=s>=85?"🌟 ยอดเยี่ยม":s>=70?"👍 ดี":s>=50?"⚠️ ต้องเฝ้าระวัง":"🚨 วิกฤต ต้องดูแลด่วน";
+}
+
+let lastTs=0;
+db.ref("latest").on("value",s=>{
+  const d=s.val();if(!d)return;cur=d;lastTs=d.ts||Date.now();
+  M.forEach(m=>{const x=d[m.k];if(typeof x!=="number")return;
+    $("v_"+m.k).textContent=Number(x).toLocaleString("en-US",{minimumFractionDigits:m.d,maximumFractionDigits:m.d});
+    $("p_"+m.k).style.left=pct(m,x)+"%";
+    $("c_"+m.k).classList.toggle("off",x<m.ok[0]||x>m.ok[1]);});
+  $("last").textContent=new Date(lastTs).toLocaleString("th-TH");
+  score(d);advice(d);derived(d);events(d);drawRadar();
+});
+db.ref("history").orderByKey().limitToLast(60).on("value",s=>{
+  hist=[];s.forEach(c=>{hist.push(c.val())});
+  $("cnt").textContent=hist.length;stats();drawChart();
+});
+setInterval(()=>{
+  $("clock").textContent=new Date().toLocaleTimeString("th-TH");
+  const on=lastTs&&Date.now()-lastTs<30000;
+  $("dot").className="dot"+(on?" on":"");
+  $("status").textContent=on?"ESP32 ออนไลน์":(lastTs?"ESP32 ออฟไลน์":"รอข้อมูล…");
+},1000);
+</script>
+</body>
+</html>
